@@ -585,7 +585,7 @@ export async function applyAuthChoiceApiProviders(
   if (authChoice === "nebius-api-key") {
     let hasCredential = false;
 
-    if (!hasCredential && params.opts?.token && params.opts?.tokenProvider === "nebius") {
+    if (params.opts?.token && params.opts?.tokenProvider === "nebius") {
       await setNebiusApiKey(normalizeApiKeyInput(params.opts.token), params.agentDir);
       hasCredential = true;
     }
