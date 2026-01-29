@@ -86,6 +86,17 @@ const OLLAMA_DEFAULT_COST = {
   cacheWrite: 0,
 };
 
+const NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1";
+export const NEBIUS_DEFAULT_MODEL_ID = "Qwen/Qwen3-Coder-480B-A35B-Instruct";
+const NEBIUS_DEFAULT_CONTEXT_WINDOW = 262144;
+const NEBIUS_DEFAULT_MAX_TOKENS = 32768;
+const NEBIUS_DEFAULT_COST = {
+  input: 0,
+  output: 0,
+  cacheRead: 0,
+  cacheWrite: 0,
+};
+
 interface OllamaModel {
   name: string;
   modified_at: string;
@@ -388,6 +399,24 @@ async function buildOllamaProvider(): Promise<ProviderConfig> {
   };
 }
 
+export function buildNebiusProvider(): ProviderConfig {
+  return {
+    baseUrl: NEBIUS_BASE_URL,
+    api: "openai-completions",
+    models: [
+      {
+        id: NEBIUS_DEFAULT_MODEL_ID,
+        name: "Qwen3 Coder 480B",
+        reasoning: false,
+        input: ["text"],
+        cost: NEBIUS_DEFAULT_COST,
+        contextWindow: NEBIUS_DEFAULT_CONTEXT_WINDOW,
+        maxTokens: NEBIUS_DEFAULT_MAX_TOKENS,
+      },
+    ],
+  };
+}
+
 export async function resolveImplicitProviders(params: {
   agentDir: string;
 }): Promise<ModelsConfig["providers"]> {
@@ -452,6 +481,14 @@ export async function resolveImplicitProviders(params: {
     resolveApiKeyFromProfiles({ provider: "ollama", store: authStore });
   if (ollamaKey) {
     providers.ollama = { ...(await buildOllamaProvider()), apiKey: ollamaKey };
+  }
+
+  // Nebius provider - OpenAI-compatible Qwen models
+  const nebiusKey =
+    resolveEnvApiKeyVarName("nebius") ??
+    resolveApiKeyFromProfiles({ provider: "nebius", store: authStore });
+  if (nebiusKey) {
+    providers.nebius = { ...buildNebiusProvider(), apiKey: nebiusKey };
   }
 
   return providers;

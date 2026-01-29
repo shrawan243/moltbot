@@ -21,6 +21,7 @@ export type AuthChoiceGroupId =
   | "minimax"
   | "synthetic"
   | "venice"
+  | "nebius"
   | "qwen";
 
 export type AuthChoiceGroup = {
@@ -71,6 +72,12 @@ const AUTH_CHOICE_GROUP_DEFS: {
     label: "Venice AI",
     hint: "Privacy-focused (uncensored models)",
     choices: ["venice-api-key"],
+  },
+  {
+    value: "nebius",
+    label: "Nebius",
+    hint: "Qwen3 Coder 480B",
+    choices: ["nebius-api-key"],
   },
   {
     value: "google",
@@ -153,6 +160,11 @@ export function buildAuthChoiceOptions(params: {
     value: "venice-api-key",
     label: "Venice AI API key",
     hint: "Privacy-focused inference (uncensored models)",
+  });
+  options.push({
+    value: "nebius-api-key",
+    label: "Nebius API key",
+    hint: "Qwen3 Coder 480B via Nebius Token Factory",
   });
   options.push({
     value: "github-copilot",

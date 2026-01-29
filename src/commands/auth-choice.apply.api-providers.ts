@@ -17,6 +17,8 @@ import {
   applyKimiCodeProviderConfig,
   applyMoonshotConfig,
   applyMoonshotProviderConfig,
+  applyNebiusConfig,
+  applyNebiusProviderConfig,
   applyOpencodeZenConfig,
   applyOpencodeZenProviderConfig,
   applyOpenrouterConfig,
@@ -32,6 +34,7 @@ import {
   applyZaiConfig,
   KIMI_CODE_MODEL_REF,
   MOONSHOT_DEFAULT_MODEL_REF,
+  NEBIUS_DEFAULT_MODEL_REF,
   OPENROUTER_DEFAULT_MODEL_REF,
   SYNTHETIC_DEFAULT_MODEL_REF,
   VENICE_DEFAULT_MODEL_REF,
@@ -40,6 +43,7 @@ import {
   setGeminiApiKey,
   setKimiCodeApiKey,
   setMoonshotApiKey,
+  setNebiusApiKey,
   setOpencodeZenApiKey,
   setOpenrouterApiKey,
   setSyntheticApiKey,
@@ -89,6 +93,8 @@ export async function applyAuthChoiceApiProviders(
       authChoice = "synthetic-api-key";
     } else if (params.opts.tokenProvider === "venice") {
       authChoice = "venice-api-key";
+    } else if (params.opts.tokenProvider === "nebius") {
+      authChoice = "nebius-api-key";
     } else if (params.opts.tokenProvider === "opencode") {
       authChoice = "opencode-zen";
     }
@@ -567,6 +573,65 @@ export async function applyAuthChoiceApiProviders(
         applyDefaultConfig: applyVeniceConfig,
         applyProviderConfig: applyVeniceProviderConfig,
         noteDefault: VENICE_DEFAULT_MODEL_REF,
+        noteAgentModel,
+        prompter: params.prompter,
+      });
+      nextConfig = applied.config;
+      agentModelOverride = applied.agentModelOverride ?? agentModelOverride;
+    }
+    return { config: nextConfig, agentModelOverride };
+  }
+
+  if (authChoice === "nebius-api-key") {
+    let hasCredential = false;
+
+    if (!hasCredential && params.opts?.token && params.opts?.tokenProvider === "nebius") {
+      await setNebiusApiKey(normalizeApiKeyInput(params.opts.token), params.agentDir);
+      hasCredential = true;
+    }
+
+    if (!hasCredential) {
+      await params.prompter.note(
+        [
+          "Nebius provides access to Qwen3 Coder 480B and other models.",
+          "Get your API key at: https://console.nebius.com/",
+          "Uses the Token Factory API at api.tokenfactory.nebius.com.",
+        ].join("\n"),
+        "Nebius",
+      );
+    }
+
+    const envKey = resolveEnvApiKey("nebius");
+    if (envKey) {
+      const useExisting = await params.prompter.confirm({
+        message: `Use existing NEBIUS_API_KEY (${envKey.source}, ${formatApiKeyPreview(envKey.apiKey)})?`,
+        initialValue: true,
+      });
+      if (useExisting) {
+        await setNebiusApiKey(envKey.apiKey, params.agentDir);
+        hasCredential = true;
+      }
+    }
+    if (!hasCredential) {
+      const key = await params.prompter.text({
+        message: "Enter Nebius API key",
+        validate: validateApiKeyInput,
+      });
+      await setNebiusApiKey(normalizeApiKeyInput(String(key)), params.agentDir);
+    }
+    nextConfig = applyAuthProfileConfig(nextConfig, {
+      profileId: "nebius:default",
+      provider: "nebius",
+      mode: "api_key",
+    });
+    {
+      const applied = await applyDefaultModelChoice({
+        config: nextConfig,
+        setDefaultModel: params.setDefaultModel,
+        defaultModel: NEBIUS_DEFAULT_MODEL_REF,
+        applyDefaultConfig: applyNebiusConfig,
+        applyProviderConfig: applyNebiusProviderConfig,
+        noteDefault: NEBIUS_DEFAULT_MODEL_REF,
         noteAgentModel,
         prompter: params.prompter,
       });
